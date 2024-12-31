@@ -1,14 +1,19 @@
-// src/common/dto/create-user.dto.ts
-
-import { IsString, IsBoolean } from 'class-validator';
+import { IsString, IsNotEmpty, IsEmail } from 'class-validator';
 
 export class CreateUserDto {
   @IsString()
-  username: string;
+  @IsNotEmpty()
+  firstName: string;
 
   @IsString()
-  password: string;
+  @IsNotEmpty()
+  lastName: string;
 
-  @IsBoolean()
-  isAdmin: boolean;  // Mark as true for admin, false for regular users
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  password: string;
 }

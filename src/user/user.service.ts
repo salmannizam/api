@@ -1,24 +1,25 @@
 // src/user/user.service.ts
+
 import { Injectable } from '@nestjs/common';
-import { knex } from '../config/knex.config';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from './user.entity';
 import { CreateUserDto } from '../common/dto/create-user.dto';
 
 @Injectable()
 export class UserService {
-  async create(createUserDto: CreateUserDto) {
-    const { username, password, isAdmin } = createUserDto;
-    const result = await knex('users')
-      .insert({
-        username,
-        password,    // In production, ensure password is hashed
-        is_admin: isAdmin,
-      })
-      .returning('*');
-    return result[0];  // Return the inserted user
+  constructor(
+    @InjectRepository(User)  // Inject the User repository
+    private userRepository: Repository<User>,
+  ) {}
+
+  // Your methods
+  async create(createUserDto: CreateUserDto): Promise<User> {
+    const user = this.userRepository.create(createUserDto);
+    return this.userRepository.save(user);
   }
 
-  async findByUsername(username: string) {
-    const user = await knex('users').where('username', username).first();
-    return user;  // Will return null if no user is found
+  async findByUsername(username: string): Promise<User | undefined> {
+    return this.userRepository.findOne({ where: { email: username } });  // Assuming username is email
   }
 }
