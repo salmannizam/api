@@ -37,3 +37,8 @@ export class SavePreSurveyDetailDto {
   @IsEnum(StartZone)
   startZone: StartZone;
 }
+
+
+export class SubmitSurveyDto {
+
+}

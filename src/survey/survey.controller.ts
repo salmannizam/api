@@ -1,8 +1,7 @@
 import { Controller, Post, Body } from '@nestjs/common';
 import { SurveyService } from './survey.service';
 import { ValidateSurveyDto } from './dto/vaildate-survey.dto';
-
-import { SavePreSurveyDetailDto } from './dto/save-pre-survey.dto';
+import { SubmitSurveyDto } from './dto/submit-survey.dto';
 
 @Controller('survey')
 export class SurveyController {
@@ -13,9 +12,9 @@ export class SurveyController {
     return await this.surveyService.validateProjectId(validateSurveyDto);
   }
   
-  @Post('pre-survey-details')
-  async savePreSurveyDetails(@Body() savPreSurveyDetailDto: SavePreSurveyDetailDto) {
-    return await this.surveyService.savePreSurveyDetails(savPreSurveyDetailDto);
-  }
 
+  @Post('submit-survey')
+  async submitSurvey(@Body() submitSurveyDto: SubmitSurveyDto) {
+    return await this.surveyService.submitSurvey(submitSurveyDto);
+  }
 }
