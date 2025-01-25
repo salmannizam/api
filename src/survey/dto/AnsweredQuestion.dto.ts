@@ -3,6 +3,9 @@
 import { IsString, IsNumber, IsOptional } from 'class-validator';
 
 export class AnsweredQuestionDto {
+  @IsString()
+  SurveyID: string;
+
   @IsNumber()
   QuestionID: number;
 
@@ -15,12 +18,14 @@ export class AnsweredQuestionDto {
   @IsString()
   Location: string;
 
+  @IsOptional()  // If remarks is optional
   @IsString()
-  remarks: string;
+  remarks?: string;
+
+  @IsOptional()  // If Deviceid is optional
+  @IsString()
+  Deviceid?: string;
 
   @IsString()
-  Deviceid: string;
-
-  @IsString()
-  ProjectId: string;
+  projectid: string;
 }
