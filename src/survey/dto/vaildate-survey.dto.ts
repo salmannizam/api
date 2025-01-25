@@ -7,5 +7,5 @@ export class ValidateSurveyDto {
 
   @IsString()
   @IsNotEmpty()
-  productId: string;
+  projectId: string;
 }

@@ -11,11 +11,12 @@ export class SurveyService {
   async validateProjectId(validateSurveyDto: ValidateSurveyDto) {
     // Correctly define the SQL query with parameterized values
     const sqlQuery = 'EXEC GetvalidateProjectId @ProjectId, @SurveyName';
-
+    console.log("hitted")
+ 
     try {
       // Pass parameters explicitly in the correct order
       const res = await this.databaseService.query(sqlQuery, [
-        { name: 'ProjectId', type: sql.NVarChar(100), value: validateSurveyDto.productId }, // Use productId from DTO
+        { name: 'ProjectId', type: sql.NVarChar(100), value: validateSurveyDto.projectId }, // Use projectId from DTO
         { name: 'SurveyName', type: sql.NVarChar(100), value: validateSurveyDto.surveyId },  // Use surveyId from DTO
       ]);
 
