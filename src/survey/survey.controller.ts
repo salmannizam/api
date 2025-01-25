@@ -1,7 +1,7 @@
 import { Controller, Post, Body } from '@nestjs/common';
 import { SurveyService } from './survey.service';
 import { ValidateSurveyDto } from './dto/vaildate-survey.dto';
-import { SubmitSurveyDto } from './dto/submit-survey.dto';
+import { SubmitSurveyDto } from './dto/SubmitSurvey.dto';
 
 @Controller('survey')
 export class SurveyController {

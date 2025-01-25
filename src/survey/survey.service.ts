@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { ValidateSurveyDto } from './dto/vaildate-survey.dto';
 import * as sql from 'mssql';  // Ensure 'mssql' is imported
-import { SubmitSurveyDto } from './dto/submit-survey.dto';
+import { SubmitSurveyDto } from './dto/SubmitSurvey.dto';
 
 @Injectable()
 export class SurveyService {
@@ -45,7 +45,21 @@ export class SurveyService {
 
 
   async submitSurvey(submitSurveyDto: SubmitSurveyDto) {
-    // Correctly define the SQL query with parameterized values\
+    // Here, you can handle the business logic of saving the survey data, uploading the images, etc.
+    // For example, you could save the data to the database and process images.
+
+    const { PreSurveyDetails, answeredQuestions, images } = submitSurveyDto;
+
+    console.log('PreSurveyDetails:', PreSurveyDetails);
+    console.log('Answered Questions:', answeredQuestions);
+    console.log('Images:', images);
+
+    // Add your business logic here (save data to DB, upload images, etc.)
+
+    return {
+      success: true,
+      message: 'Survey successfully submitted.',
+    };
   }
 
 }
