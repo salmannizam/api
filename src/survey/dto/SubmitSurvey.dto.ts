@@ -1,22 +1,83 @@
-// src/survey/dto/SubmitSurvey.dto.ts
+import { IsString, IsArray, IsObject, IsOptional, IsNumberString } from 'class-validator';
 
-import { IsArray, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
-import { PreSurveyDetailsDto } from './PreSurveyDetails.dto';
-import { AnsweredQuestionDto } from './AnsweredQuestion.dto';
+class AnsweredQuestionDto {
+  @IsString()
+  surveyid: string;
+
+  @IsString()
+  answerid: string;
+
+  @IsString()
+  answertext: string;
+
+  @IsString()
+  Location: string;
+
+  @IsString()
+  remarks: string;
+
+  @IsString()
+  Deviceid: string;
+
+  @IsString()
+  ProjectId: string;
+
+  @IsString()
+  QuestionID: string;
+}
+
+class PreSurveyDetailsDto {
+  @IsString()
+  SurveyID: string;
+
+  @IsString()
+  ResultID: string;
+
+  @IsString()
+  OutletName: string;
+
+  @IsString()
+  State: string;
+
+  @IsString()
+  country: string;
+
+  @IsString()
+  Location: string;
+
+  @IsString()
+  Address: string;
+
+  @IsString()
+  Zone: string;
+
+  @IsNumberString()
+  StartDate: string;
+
+  @IsNumberString()
+  StartTime: string;
+
+  @IsNumberString()
+  EndDate: string;
+  
+  @IsNumberString()
+  EndTime: string;
+
+  @IsString()
+  ProjectId: string;
+}
 
 export class SubmitSurveyDto {
-  @ValidateNested()
+  @IsString()
+  ProjectId: string;
+
   @IsObject()
   PreSurveyDetails: PreSurveyDetailsDto;
 
-  @IsString()
-  projectId: string;
-
   @IsArray()
-  @ValidateNested({ each: true })
   answeredQuestions: AnsweredQuestionDto[];
 
-  @IsOptional()  // Optional, but if you are sending images, this field must be present.
   @IsObject()
-  images: Record<string, any>;  // This is for key-value pairs (questionId -> file)
+  @IsOptional() // Optional since there may be no images
+  images: { [key: string]: string }; // Key: QuestionID, Value: Base64 Image String
 }

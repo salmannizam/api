@@ -3,6 +3,8 @@ import { DatabaseService } from '../database/database.service';
 import { ValidateSurveyDto } from './dto/vaildate-survey.dto';
 import * as sql from 'mssql';  // Ensure 'mssql' is imported
 import { SubmitSurveyDto } from './dto/SubmitSurvey.dto';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class SurveyService {
@@ -12,7 +14,7 @@ export class SurveyService {
     // Correctly define the SQL query with parameterized values
     const sqlQuery = 'EXEC GetvalidateProjectId @ProjectId, @SurveyName';
     console.log("hitted")
- 
+
     try {
       // Pass parameters explicitly in the correct order
       const res = await this.databaseService.query(sqlQuery, [
@@ -46,21 +48,43 @@ export class SurveyService {
 
 
   async submitSurvey(submitSurveyDto: SubmitSurveyDto) {
-    // Here, you can handle the business logic of saving the survey data, uploading the images, etc.
-    // For example, you could save the data to the database and process images.
 
-    const { PreSurveyDetails, answeredQuestions, images } = submitSurveyDto;
+    try {
+      const { ProjectId, PreSurveyDetails, answeredQuestions, images } = submitSurveyDto;
 
-    console.log('PreSurveyDetails:', PreSurveyDetails);
-    console.log('Answered Questions:', answeredQuestions);
-    console.log('Images:', images);
+      console.log('Survey Data:', submitSurveyDto);
 
-    // Add your business logic here (save data to DB, upload images, etc.)
+      // Check if the answer to QuestionID 10033172 is 'no'
+      const isQuestion10033172No = answeredQuestions.some(
+        (question) => question.QuestionID === "10033172" && question.answertext.toLowerCase() === 'no'
+      );
 
-    return {
-      success: true,
-      message: 'Survey successfully submitted.',
-    };
+      // Process the Base64 images (optional, depending on your needs)
+      if (images && !isQuestion10033172No) {
+        const uploadDir = './uploads';
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir);
+        }
+
+        Object.keys(images).forEach((questionId) => {
+          const base64Image = images[questionId];
+          const buffer = Buffer.from(base64Image, 'base64');
+          const filePath = path.join(uploadDir, `image_${questionId}.jpg`);
+          fs.writeFileSync(filePath, buffer);
+          console.log(`Saved image for Question ${questionId} as ${filePath}`);
+        });
+      }
+
+      // You can add more logic here, e.g., save the data to a database, send a response, etc.
+
+      return {
+        "status": "success",
+        "message": "Survey submitted successfully",
+      }
+    } catch (err) {
+      throw err;
+    }
+
   }
 
 }
