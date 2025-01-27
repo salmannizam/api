@@ -27,5 +27,5 @@ export class AnsweredQuestionDto {
   Deviceid?: string;
 
   @IsString()
-  projectid: string;
+  ProjectId: string;
 }
