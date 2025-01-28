@@ -70,7 +70,7 @@ export class SurveyService {
 
       // Check if the answer to QuestionID 10033172 is 'no'
       const isQuestion10033172Yes = answeredQuestions.some(
-        (question) => question.QuestionID === "10033172" && question.answertext.toLowerCase() === 'yes'
+        (question) => question.QuestionID === "10033172" && question.AnswerText.toLowerCase() === 'yes'
       );
 
       // Process the Base64 images (optional, depending on your needs)

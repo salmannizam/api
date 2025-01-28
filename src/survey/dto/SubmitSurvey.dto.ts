@@ -3,22 +3,25 @@ import { Expose } from 'class-transformer';
 
 class AnsweredQuestionDto {
   @IsString()
-  surveyid: string;
+  SurveyID: string;
 
   @IsString()
-  answerid: string;
+  ResultID: string;
 
   @IsString()
-  answertext: string;
+  AnswerID: string;
+
+  @IsString()
+  AnswerText: string;
 
   @IsString()
   Location: string;
 
   @IsString()
-  remarks: string;
+  Remarks: string;
 
   @IsString()
-  Deviceid: string;
+  DeviceID: string;
 
   @IsString()
   ProjectId: string;
@@ -44,9 +47,9 @@ class PreSurveyDetailsDto {
   @IsNotEmpty()  // Make State mandatory
   State: string;
 
-  @IsString()
-  @IsNotEmpty()  // Make country mandatory
-  country: string;
+  // @IsString()
+  // @IsNotEmpty()  // Make country mandatory
+  // country: string;
 
   @IsString()
   @IsNotEmpty()  // Make Location mandatory
