@@ -61,17 +61,18 @@ export class SurveyService {
     try {
       const { ProjectId, PreSurveyDetails, answeredQuestions, images } = submitSurveyDto;
 
-      console.log('Survey Data:', PreSurveyDetails);
-      console.log('Survey Data:', answeredQuestions);
+      // console.log('Survey Data:', PreSurveyDetails);
+      // console.log('Survey Data:', answeredQuestions);
 
-      // Serialize PreSurveyDetails and answeredQuestions to JSON
-      const preSurveyDetailsJson = JSON.stringify(PreSurveyDetails);
-      const answeredQuestionsJson = JSON.stringify(answeredQuestions);
+          // Serialize PreSurveyDetails and answeredQuestions to JSON
+    const preSurveyDetailsJson = JSON.stringify({ OutletMasterImport: PreSurveyDetails });
+    const answeredQuestionsJson = JSON.stringify({ SurveyResultsImport: answeredQuestions });
 
       // Check if the answer to QuestionID 10033172 is 'no'
       const isQuestion10033172Yes = answeredQuestions.some(
-        (question) => question.QuestionID === "10033172" && question.AnswerText.toLowerCase() === 'yes'
+        (question) => question.QuestionID == "10033172" && question.AnswerText.toLowerCase() === 'yes'
       );
+      console.log(isQuestion10033172Yes)
 
       // Process the Base64 images (optional, depending on your needs)
       if (images && isQuestion10033172Yes) {
