@@ -5,16 +5,16 @@ import { SubmitSurveyDto } from './dto/SubmitSurvey.dto';
 
 @Controller('survey')
 export class SurveyController {
-  constructor(private readonly surveyService: SurveyService) {}
+  constructor(private readonly surveyService: SurveyService) { }
 
   @Post('validate-project')
   async validateProjectId(@Body() validateSurveyDto: ValidateSurveyDto) {
     return await this.surveyService.validateProjectId(validateSurveyDto);
   }
-  
-  @Get('get-submitted-project/:surveyId')
-  async getSubmittedSurvey(@Param('surveyId') surveyId: string) {
-    return await this.surveyService.getSubmittedSurvey(surveyId);
+
+  @Get('get-submitted-project/:projectId/:outletname')
+  async getSubmittedSurvey(@Param('projectId') projectId: string, @Param('outletname') outletname: string) {
+    return await this.surveyService.getSubmittedSurvey(projectId,outletname);
   }
 
   @Post('submit-survey')

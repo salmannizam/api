@@ -46,14 +46,38 @@ export class SurveyService {
     }
   }
 
-  async getSubmittedSurvey(surveyId: string) {
+  async getSubmittedSurvey(projectId: string, outletname: string) {
+    // Define the SQL query to call the stored procedure
+    const sqlQuery = 'EXEC OutletExist @ProjectId, @OutletName';
+
     try {
+      // Pass parameters to the stored procedure
+      const res = await this.databaseService.query(sqlQuery, [
+        { name: 'ProjectId', type: sql.NVarChar(255), value: projectId },  // ProjectId passed to procedure
+        { name: 'OutletName', type: sql.NVarChar(255), value: outletname }, // OutletName passed to procedure
+      ]);
 
-
+      // Assuming the result is an array of survey IDs or empty
+      if (res && res.length > 0) {
+        // If survey IDs are found, return them
+        return {
+          status: 'success',
+          message: 'Survey IDs found',
+          data: res, // or res[0].surveyId if it's one surveyId
+        };
+      } else {
+        // If no survey IDs are found, return an empty result
+        return {
+          status: 'fail',
+          message: 'No survey submissions found for the provided Project ID and Outlet Name',
+          data: [],
+        };
+      }
     } catch (err) {
-      throw new BadRequestException("Unable to get submitted survey")
+      // Handle errors during query execution
+      console.error('Error executing query:', err);
+      throw new BadRequestException('Unable to get submitted survey');
     }
-
   }
 
   async submitSurvey(submitSurveyDto: SubmitSurveyDto) {
@@ -64,9 +88,26 @@ export class SurveyService {
       // console.log('Survey Data:', PreSurveyDetails);
       // console.log('Survey Data:', answeredQuestions);
 
-          // Serialize PreSurveyDetails and answeredQuestions to JSON
-    const preSurveyDetailsJson = JSON.stringify({ OutletMasterImport: PreSurveyDetails });
-    const answeredQuestionsJson = JSON.stringify({ SurveyResultsImport: answeredQuestions });
+      const surveyGivenOfOutlet = await this.getSubmittedSurvey(ProjectId, PreSurveyDetails.OutletName);
+      if (surveyGivenOfOutlet.data.length > 0) {
+        const productQuestion = answeredQuestions.find(
+          (question) => question.QuestionID == "10033167"
+        );
+        // Ensure that the productQuestion is found and has an answertext
+        if (productQuestion && productQuestion.AnswerText) {
+          const productname = productQuestion.AnswerText;
+          // Check if the product survey already exists in the given outlet's surveys
+          const surveyExist = await this.checkProductSurveyGiven(surveyGivenOfOutlet.data, productname);
+
+          if(surveyExist){
+            throw new BadRequestException('Survey of this product under this oultet name already exist')
+          }
+        }
+      }
+
+      // Serialize PreSurveyDetails and answeredQuestions to JSON
+      const preSurveyDetailsJson = JSON.stringify({ OutletMasterImport: PreSurveyDetails });
+      const answeredQuestionsJson = JSON.stringify({ SurveyResultsImport: answeredQuestions });
 
       // Check if the answer to QuestionID 10033172 is 'no'
       const isQuestion10033172Yes = answeredQuestions.some(
@@ -75,20 +116,29 @@ export class SurveyService {
       console.log(isQuestion10033172Yes)
 
       // Process the Base64 images (optional, depending on your needs)
+      // Process the Base64 images (optional, depending on your needs)
       if (images && isQuestion10033172Yes) {
-        const uploadDir = './uploads';
+        // Construct the path to store images based on ProjectId and Outlet Name
+        const outletName = PreSurveyDetails['Outlet Name'] || 'defaultOutlet'; // Fallback if Outlet Name is not available
+        const uploadDir = path.join('./uploads', ProjectId.toString(), outletName);
+
+        // Create the directory if it doesn't exist
         if (!fs.existsSync(uploadDir)) {
-          fs.mkdirSync(uploadDir);
+          fs.mkdirSync(uploadDir, { recursive: true });
         }
 
+        // Save images
         Object.keys(images).forEach((questionId) => {
           const base64Image = images[questionId];
           const buffer = Buffer.from(base64Image, 'base64');
           const filePath = path.join(uploadDir, `image_${questionId}.jpg`);
+
+          // Write image to the file system
           fs.writeFileSync(filePath, buffer);
-          console.log(`Saved image for Question ${questionId} as ${filePath}`);
+          console.log(`Saved image for Question ${questionId} at ${filePath}`);
         });
       }
+
 
       // Prepare the parameters to pass to the stored procedure
       const sqlQuery = 'EXEC [dbo].[OutletImportJSONSAVE] @JSON_INPUT, @JSON_INPUT1';
@@ -119,5 +169,16 @@ export class SurveyService {
     }
 
   }
+
+
+  private checkProductSurveyGiven(surveys: any[], productName: string): boolean {
+    // Check if any survey has the provided answerText (productName) for the specified QuestionID (10033167)
+    const foundAnswer = surveys.some(survey =>
+      survey.answertext === productName && survey.QuestionID === 10033167
+    );
+    // Return true if foundAnswer is true, otherwise false
+    return foundAnswer;
+  }
+
 
 }
