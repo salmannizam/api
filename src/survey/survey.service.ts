@@ -46,9 +46,9 @@ export class SurveyService {
     }
   }
 
-  async getSubmittedSurvey(projectId: string, outletname: string) {
+  async getSubmittedSurvey2(projectId: string, outletname: string) {
     // Define the SQL query to call the stored procedure
-    const sqlQuery = 'EXEC OutletExist @ProjectId, @OutletName';
+    const sqlQuery = 'EXEC [GetSurveyByOutletName] @ProjectId, @OutletName';
 
     try {
       // Pass parameters to the stored procedure
@@ -80,6 +80,39 @@ export class SurveyService {
     }
   }
 
+  async getSubmittedSurvey(projectId: string, outletname: string) {
+    // Define the SQL query to call the stored procedure
+    const sqlQuery = 'EXEC [dbo].[GetSurveyByOutletName] @ProjectId, @OutletName';
+
+    try {
+      // Pass parameters to the stored procedure
+      const result = await this.databaseService.query(sqlQuery, [
+        { name: 'ProjectId', type: sql.NVarChar(255), value: projectId },  // ProjectId passed to procedure
+        { name: 'OutletName', type: sql.NVarChar(255), value: outletname }, // OutletName passed to procedure
+      ]);
+
+      // If there are rows (survey results), return them
+      if (result && result.length > 0) {
+        return {
+          status: 'success',
+          message: 'Survey data found',
+          data: result, // This will contain the survey data retrieved
+        };
+      } else {
+        // If no data found, return empty array with a fail status
+        return {
+          status: 'success',
+          message: 'No survey data found for the provided Project ID and Outlet Name',
+          data: [], // Empty array indicating no results
+        };
+      }
+    } catch (err) {
+      // Handle errors during query execution
+      console.error('Error executing query:', err);
+      throw new BadRequestException('Unable to get submitted survey');
+    }
+  }
+
   async submitSurvey(submitSurveyDto: SubmitSurveyDto) {
 
     try {
@@ -88,18 +121,21 @@ export class SurveyService {
       // console.log('Survey Data:', PreSurveyDetails);
       // console.log('Survey Data:', answeredQuestions);
 
-      const surveyGivenOfOutlet = await this.getSubmittedSurvey(ProjectId, PreSurveyDetails.OutletName);
+      const surveyGivenOfOutlet = await this.getSubmittedSurvey(ProjectId, PreSurveyDetails.Outlet_Name);
       if (surveyGivenOfOutlet.data.length > 0) {
+    
         const productQuestion = answeredQuestions.find(
-          (question) => question.QuestionID == "10033167"
+          (question) => question.QuestionID == "10033164"
         );
+       
         // Ensure that the productQuestion is found and has an answertext
         if (productQuestion && productQuestion.AnswerText) {
           const productname = productQuestion.AnswerText;
+         
           // Check if the product survey already exists in the given outlet's surveys
           const surveyExist = await this.checkProductSurveyGiven(surveyGivenOfOutlet.data, productname);
 
-          if(surveyExist){
+          if (surveyExist) {
             throw new BadRequestException('Survey of this product under this oultet name already exist')
           }
         }
@@ -172,10 +208,14 @@ export class SurveyService {
 
 
   private checkProductSurveyGiven(surveys: any[], productName: string): boolean {
+    console.log("surveys",surveys)
+    console.log("productName",productName)
+   
     // Check if any survey has the provided answerText (productName) for the specified QuestionID (10033167)
     const foundAnswer = surveys.some(survey =>
-      survey.answertext === productName && survey.QuestionID === 10033167
+      survey.AnswerText == productName && survey.QuestionID == 10033164
     );
+    console.log(foundAnswer)
     // Return true if foundAnswer is true, otherwise false
     return foundAnswer;
   }

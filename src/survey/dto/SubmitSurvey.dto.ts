@@ -32,16 +32,15 @@ class AnsweredQuestionDto {
 
 class PreSurveyDetailsDto {
   @IsString()
-  SurveyID: string;
+  SurveyID: string; 
 
   @IsString()
   ResultID: string;
 
-  @Expose({ name: 'Outlet Name' })  // Map JSON key "Outlet Name" to DTO property `OutletName`
   @IsString()
   @IsNotEmpty()
   @Length(1, 255)
-  OutletName: string;
+  Outlet_Name: string;
 
   @IsString()
   @IsNotEmpty()  // Make State mandatory
