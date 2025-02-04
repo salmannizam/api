@@ -5,6 +5,7 @@ import * as sql from 'mssql';  // Ensure 'mssql' is imported
 import { SubmitSurveyDto } from './dto/SubmitSurvey.dto';
 import * as fs from 'fs';
 import * as path from 'path';
+import { GetResultIdDto } from './dto/getResultId.dto';
 
 @Injectable()
 export class SurveyService {
@@ -22,11 +23,14 @@ export class SurveyService {
         { name: 'SurveyName', type: sql.NVarChar(100), value: validateSurveyDto.surveyId },  // Use surveyId from DTO
       ]);
 
+      console.log(res)
 
-      if (res.length > 0 && res[0].RESULT == "SUCCESS") {
+
+      if (res.length > 0 && res[0].RESULT == "SUCCESS" && res[0].SURVEYID) {
         return {
           "status": "success",
           "message": "Project ID is valid",
+          data: { surveyId: res[0].SURVEYID }
         }
       } else if (res.length > 0 && res[0].RESULT == "FAIL") {
         return {
@@ -45,6 +49,47 @@ export class SurveyService {
       throw error; // Re-throw the error to be caught by global error handlers
     }
   }
+
+  async getResultId(getResultIdDto: GetResultIdDto) {
+    // Correctly define the SQL query with parameterized values
+    const sqlQuery = 'EXEC GetvalidateOutletName @ProjectId, @SurveyName, @OutletName';
+    console.log("hitted");
+
+    try {
+      // Pass parameters explicitly in the correct order
+      const res = await this.databaseService.query(sqlQuery, [
+        { name: 'ProjectId', type: sql.NVarChar(100), value: getResultIdDto.ProjectId },  // Use ProjectId from DTO
+        { name: 'SurveyName', type: sql.NVarChar(100), value: getResultIdDto.surveyId },  // Use SurveyName from DTO
+        { name: 'OutletName', type: sql.NVarChar(100), value: getResultIdDto.OutletName }, // Use OutletName from DTO
+      ]);
+
+      // console.log(res);
+
+      if (res.length > 0 && res[0].RESULT === "SUCCESS") {
+        return {
+          status: "success",
+          message: "Result ID found",
+          data: { resultId: res[0].RESULTID }
+        };
+      } else if (res.length > 0 && res[0].RESULT === "FAIL") {
+        return {
+          status: "fail",
+          message: "Invalid Project ID or Outlet Name",
+        };
+      } else {
+        return {
+          status: "fail",
+          message: "Error validating Project ID or Outlet Name",
+        };
+      }
+
+    } catch (error) {
+      console.error('Error executing query:', error);
+      throw error; // Re-throw the error to be caught by global error handlers
+    }
+  }
+
+
 
   async getSubmittedSurvey2(projectId: string, outletname: string) {
     // Define the SQL query to call the stored procedure
@@ -123,15 +168,15 @@ export class SurveyService {
 
       const surveyGivenOfOutlet = await this.getSubmittedSurvey(ProjectId, PreSurveyDetails.Outlet_Name);
       if (surveyGivenOfOutlet.data.length > 0) {
-    
+
         const productQuestion = answeredQuestions.find(
           (question) => question.QuestionID == "10033164"
         );
-       
+
         // Ensure that the productQuestion is found and has an answertext
         if (productQuestion && productQuestion.AnswerText) {
           const productname = productQuestion.AnswerText;
-         
+
           // Check if the product survey already exists in the given outlet's surveys
           const surveyExist = await this.checkProductSurveyGiven(surveyGivenOfOutlet.data, productname);
 
@@ -186,6 +231,7 @@ export class SurveyService {
       ]);
       // You can add more logic here, e.g., save the data to a database, send a response, etc.
 
+      // console.log("res",res)
       // Handle response from the stored procedure
       if (res && res.length > 0 && res[0].RESULT === "SUCCESS") {
         return {
@@ -208,9 +254,9 @@ export class SurveyService {
 
 
   private checkProductSurveyGiven(surveys: any[], productName: string): boolean {
-    console.log("surveys",surveys)
-    console.log("productName",productName)
-   
+    // console.log("surveys", surveys)
+    // console.log("productName", productName)
+
     // Check if any survey has the provided answerText (productName) for the specified QuestionID (10033167)
     const foundAnswer = surveys.some(survey =>
       survey.AnswerText == productName && survey.QuestionID == 10033164
