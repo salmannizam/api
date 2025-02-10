@@ -202,6 +202,7 @@ export class SurveyService {
         // Construct the path to store images based on ProjectId and Outlet Name
         const outletName = PreSurveyDetails['Outlet Name'] || 'defaultOutlet'; // Fallback if Outlet Name is not available
         const uploadDir = path.join('./uploads', ProjectId.toString(), outletName);
+        const productname = answeredQuestions.find(survey => survey.QuestionID == "10033164");
 
         // Create the directory if it doesn't exist
         if (!fs.existsSync(uploadDir)) {
@@ -212,7 +213,7 @@ export class SurveyService {
         Object.keys(images).forEach((questionId) => {
           const base64Image = images[questionId];
           const buffer = Buffer.from(base64Image, 'base64');
-          const filePath = path.join(uploadDir, `image_${questionId}.jpg`);
+          const filePath = path.join(uploadDir, `${productname.AnswerText}_${questionId}.jpg`);
 
           // Write image to the file system
           fs.writeFileSync(filePath, buffer);
