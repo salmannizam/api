@@ -214,6 +214,7 @@ export class SurveyService {
           const base64Image = images[questionId];
           const buffer = Buffer.from(base64Image, 'base64');
           const filePath = path.join(uploadDir, `${productname.AnswerText}_${questionId}.jpg`);
+          console.log(filePath)
 
           // Write image to the file system
           fs.writeFileSync(filePath, buffer);
@@ -246,8 +247,10 @@ export class SurveyService {
         };
       }
     } catch (err) {
+      
+      console.error('Error submitting survey:', err.message);
+      // throw new BadRequestException(err.message)
 
-      console.error('Error submitting survey:', err);
       throw err;
     }
 
