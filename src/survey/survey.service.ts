@@ -158,6 +158,40 @@ export class SurveyService {
     }
   }
 
+
+  async getQuestionList(surveyId: string) {
+    // Define the SQL query to call the stored procedure
+    const sqlQuery = 'EXEC [dbo].[GetSurveyQuestionMastercvdsJSON] @SurveyId';
+
+    try {
+      // Pass parameters to the stored procedure
+      const result = await this.databaseService.query(sqlQuery, [
+        { name: 'SurveyId', type: sql.NVarChar(255), value: surveyId },  // surveyId passed to procedure
+      ]);
+
+      // If there are rows (survey results), return them
+      if (result && result.length > 0) {
+        return {
+          status: 'success',
+          message: 'Survey questions data found',
+          data: result, // This will contain the survey data retrieved
+        };
+      } else {
+        // If no data found, return empty array with a fail status
+        return {
+          status: 'success',
+          message: 'No questions found for this survey',
+          data: [], // Empty array indicating no results
+        };
+      }
+    } catch (err) {
+      // Handle errors during query execution
+      console.error('Error executing query:', err);
+      throw new BadRequestException('Unable to get Survey questions');
+    }
+  }
+
+
   async submitSurvey(submitSurveyDto: SubmitSurveyDto) {
 
     try {
@@ -247,7 +281,7 @@ export class SurveyService {
         };
       }
     } catch (err) {
-      
+
       console.error('Error submitting survey:', err.message);
       // throw new BadRequestException(err.message)
 

@@ -18,12 +18,17 @@ export class SurveyController {
     return await this.surveyService.getResultId(getResultIdDto);
   }
 
+  @Get('get-questions/:surveyId')
+  async getQuestionList(@Param('surveyId') surveyId: string) {
+    return await this.surveyService.getQuestionList(surveyId);
+  }
 
   @Get('get-submitted-project/:projectId/:outletname')
   async getSubmittedSurvey(@Param('projectId') projectId: string, @Param('outletname') outletname: string) {
     return await this.surveyService.getSubmittedSurvey(projectId, outletname);
   }
 
+  
   @Post('submit-survey')
   async submitSurvey(@Body() submitSurveyDto: SubmitSurveyDto) {
     return await this.surveyService.submitSurvey(submitSurveyDto);
