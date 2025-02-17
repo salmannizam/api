@@ -89,42 +89,6 @@ export class SurveyService {
     }
   }
 
-
-
-  async getSubmittedSurvey2(projectId: string, outletname: string) {
-    // Define the SQL query to call the stored procedure
-    const sqlQuery = 'EXEC [GetSurveyByOutletName] @ProjectId, @OutletName';
-
-    try {
-      // Pass parameters to the stored procedure
-      const res = await this.databaseService.query(sqlQuery, [
-        { name: 'ProjectId', type: sql.NVarChar(255), value: projectId },  // ProjectId passed to procedure
-        { name: 'OutletName', type: sql.NVarChar(255), value: outletname }, // OutletName passed to procedure
-      ]);
-
-      // Assuming the result is an array of survey IDs or empty
-      if (res && res.length > 0) {
-        // If survey IDs are found, return them
-        return {
-          status: 'success',
-          message: 'Survey IDs found',
-          data: res, // or res[0].surveyId if it's one surveyId
-        };
-      } else {
-        // If no survey IDs are found, return an empty result
-        return {
-          status: 'fail',
-          message: 'No survey submissions found for the provided Project ID and Outlet Name',
-          data: [],
-        };
-      }
-    } catch (err) {
-      // Handle errors during query execution
-      console.error('Error executing query:', err);
-      throw new BadRequestException('Unable to get submitted survey');
-    }
-  }
-
   async getSubmittedSurvey(projectId: string, outletname: string) {
     // Define the SQL query to call the stored procedure
     const sqlQuery = 'EXEC [dbo].[GetSurveyByOutletName] @ProjectId, @OutletName';
@@ -169,21 +133,35 @@ export class SurveyService {
         { name: 'SurveyId', type: sql.NVarChar(255), value: surveyId },  // surveyId passed to procedure
       ]);
 
-      // If there are rows (survey results), return them
+      // console.log(result)
+
+      // Check if the result contains data
       if (result && result.length > 0) {
-        return {
-          status: 'success',
-          message: 'Survey questions data found',
-          data: result, // This will contain the survey data retrieved
-        };
+        // Parse the resultname field (it's a JSON string) into an actual object
+        const parsedData = JSON.parse(result[0].resultname);
+
+        // Check if parsedData contains Questions
+        if (parsedData && parsedData[0] && parsedData[0].Questions && parsedData[0].Questions.length > 0) {
+          return {
+            status: 'success',
+            message: 'Survey questions data found',
+            data: parsedData[0].Questions, // This will contain the survey data
+          };
+        } else {
+          return {
+            status: 'success',
+            message: 'No questions found for this survey',
+            data: [], // Empty array if no questions
+          };
+        }
       } else {
-        // If no data found, return empty array with a fail status
         return {
           status: 'success',
-          message: 'No questions found for this survey',
-          data: [], // Empty array indicating no results
+          message: 'No survey data found',
+          data: [], // Empty array if no result
         };
       }
+
     } catch (err) {
       // Handle errors during query execution
       console.error('Error executing query:', err);
@@ -204,7 +182,7 @@ export class SurveyService {
       if (surveyGivenOfOutlet.data.length > 0) {
 
         const productQuestion = answeredQuestions.find(
-          (question) => question.QuestionID == "10033164"
+          (question) => question.QuestionID == "10000038"
         );
 
         // Ensure that the productQuestion is found and has an answertext
@@ -224,19 +202,19 @@ export class SurveyService {
       const preSurveyDetailsJson = JSON.stringify({ OutletMasterImport: PreSurveyDetails });
       const answeredQuestionsJson = JSON.stringify({ SurveyResultsImport: answeredQuestions });
 
-      // Check if the answer to QuestionID 10033172 is 'no'
-      const isQuestion10033172Yes = answeredQuestions.some(
-        (question) => question.QuestionID == "10033172" && question.AnswerText.toLowerCase() === 'yes'
+      // Check if the answer to QuestionID 10000046 is 'no'
+      const isQuestion10000046Yes = answeredQuestions.some(
+        (question) => question.QuestionID == "10000046" && question.AnswerText.toLowerCase() === 'yes'
       );
-      console.log(isQuestion10033172Yes)
+      console.log(isQuestion10000046Yes)
 
       // Process the Base64 images (optional, depending on your needs)
       // Process the Base64 images (optional, depending on your needs)
-      if (images && isQuestion10033172Yes) {
+      if (images && isQuestion10000046Yes) {
         // Construct the path to store images based on ProjectId and Outlet Name
         const outletName = PreSurveyDetails['Outlet Name'] || 'defaultOutlet'; // Fallback if Outlet Name is not available
         const uploadDir = path.join('./uploads', ProjectId.toString(), outletName);
-        const productname = answeredQuestions.find(survey => survey.QuestionID == "10033164");
+        const productname = answeredQuestions.find(survey => survey.QuestionID == "10000038");
 
         // Create the directory if it doesn't exist
         if (!fs.existsSync(uploadDir)) {
@@ -260,6 +238,8 @@ export class SurveyService {
       // Prepare the parameters to pass to the stored procedure
       const sqlQuery = 'EXEC [dbo].[OutletImportJSONSAVE] @JSON_INPUT, @JSON_INPUT1';
 
+      // console.log('preSurveyDetailsJson',preSurveyDetailsJson);
+      // console.log('answeredQuestionsJson',answeredQuestionsJson);
       // Execute the query using the database service, passing the parameters
       const res = await this.databaseService.query(sqlQuery, [
         { name: 'JSON_INPUT', type: 'nvarchar(max)', value: preSurveyDetailsJson },
@@ -297,7 +277,7 @@ export class SurveyService {
 
     // Check if any survey has the provided answerText (productName) for the specified QuestionID (10033167)
     const foundAnswer = surveys.some(survey =>
-      survey.AnswerText == productName && survey.QuestionID == 10033164
+      survey.AnswerText == productName && survey.QuestionID == 10000038
     );
     console.log(foundAnswer)
     // Return true if foundAnswer is true, otherwise false
