@@ -187,11 +187,8 @@ export class SurveyService {
 
         // Ensure that the productQuestion is found and has an answertext
         if (productQuestion && productQuestion.AnswerText) {
-          const productname = productQuestion.AnswerText;
-
           // Check if the product survey already exists in the given outlet's surveys
-          const surveyExist = await this.checkProductSurveyGiven(surveyGivenOfOutlet.data, productname);
-
+          const surveyExist = await this.checkProductSurveyGiven(surveyGivenOfOutlet.data, productQuestion.AnswerText);
           if (surveyExist) {
             throw new BadRequestException('Survey of this product under this oultet name already exist')
           }
@@ -200,7 +197,6 @@ export class SurveyService {
 
       // Serialize PreSurveyDetails and answeredQuestions to JSON
       const preSurveyDetailsJson = JSON.stringify({ OutletMasterImport: PreSurveyDetails });
-      const answeredQuestionsJson = JSON.stringify({ SurveyResultsImport: answeredQuestions });
 
       // Check if the answer to QuestionID 10000046 is 'no'
       const isQuestion10000046Yes = answeredQuestions.some(
@@ -210,11 +206,15 @@ export class SurveyService {
 
       // Process the Base64 images (optional, depending on your needs)
       // Process the Base64 images (optional, depending on your needs)
+
       if (images && isQuestion10000046Yes) {
+        // const driveFolderPath = 'G:/Drive'; // Or 'E:/Drive'
+        const driveFolderPath = './uploads'; // Or 'E:/Drive'
+      
         // Construct the path to store images based on ProjectId and Outlet Name
         const outletName = PreSurveyDetails['Outlet Name'] || 'defaultOutlet'; // Fallback if Outlet Name is not available
-        const uploadDir = path.join('./uploads', ProjectId.toString(), outletName);
-        const productname = answeredQuestions.find(survey => survey.QuestionID == "10000038");
+        const uploadDir = path.join(driveFolderPath, ProjectId.toString(), outletName);
+
 
         // Create the directory if it doesn't exist
         if (!fs.existsSync(uploadDir)) {
@@ -225,15 +225,30 @@ export class SurveyService {
         Object.keys(images).forEach((questionId) => {
           const base64Image = images[questionId];
           const buffer = Buffer.from(base64Image, 'base64');
-          const filePath = path.join(uploadDir, `${productname.AnswerText}_${questionId}.jpg`);
+
+          // Generate a unique file name using timestamp + 5-digit random number
+          const randomNumber = Math.floor(10000 + Math.random() * 90000); // 5-digit random number
+          const timestamp = Date.now(); // Current timestamp
+          const fileName = `${timestamp}_${randomNumber}.jpg`; // Example: 1707746290567_12345.jpg
+          const filePath = path.join(uploadDir, fileName);
+
+
           console.log(filePath)
 
           // Write image to the file system
           fs.writeFileSync(filePath, buffer);
           console.log(`Saved image for Question ${questionId} at ${filePath}`);
+
+          // Update the answer text with the generated file name
+          const questionToUpdate = answeredQuestions.find(q => q.QuestionID === questionId);
+          if (questionToUpdate) {
+            questionToUpdate.AnswerText = fileName;
+          }
+
         });
       }
 
+      const answeredQuestionsJson = JSON.stringify({ SurveyResultsImport: answeredQuestions });
 
       // Prepare the parameters to pass to the stored procedure
       const sqlQuery = 'EXEC [dbo].[OutletImportJSONSAVE] @JSON_INPUT, @JSON_INPUT1';
