@@ -1,9 +1,19 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import * as bodyParser from 'body-parser';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  const logger = new Logger('HTTP');
+
+  // Log every incoming request
+  app.use((req, res, next) => {
+    logger.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+    logger.debug(`Headers: ${JSON.stringify(req.headers)}`);
+    logger.debug(`Body: ${JSON.stringify(req.body)}`);
+    next();
+  });
 
   // Enable global validation pipe
   app.useGlobalPipes(new ValidationPipe({
@@ -19,7 +29,7 @@ async function bootstrap() {
     allowedHeaders: 'Content-Type, Authorization',  // Allowed headers
   });
   // Increase the body size limit
-  app.use(bodyParser.json({ limit: '50mb' })); 
+  app.use(bodyParser.json({ limit: '50mb' }));
   await app.listen(3000);
 }
 bootstrap();

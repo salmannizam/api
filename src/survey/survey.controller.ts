@@ -10,6 +10,7 @@ export class SurveyController {
 
   @Post('validate-project')
   async validateProjectId(@Body() validateSurveyDto: ValidateSurveyDto) {
+    console.log('constroller', validateSurveyDto)
     return await this.surveyService.validateProjectId(validateSurveyDto);
   }
 
@@ -28,7 +29,7 @@ export class SurveyController {
     return await this.surveyService.getSubmittedSurvey(projectId, outletname);
   }
 
-  
+
   @Post('submit-survey')
   async submitSurvey(@Body() submitSurveyDto: SubmitSurveyDto) {
     return await this.surveyService.submitSurvey(submitSurveyDto);
