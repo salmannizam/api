@@ -205,12 +205,19 @@ export class SurveyService {
       console.log(isQuestion10000046Yes)
 
       // Process the Base64 images (optional, depending on your needs)
-      // Process the Base64 images (optional, depending on your needs)
 
       if (images && isQuestion10000046Yes) {
-        // const driveFolderPath = 'G:/Drive'; // Or 'E:/Drive'
-        const driveFolderPath = './uploads'; // Or 'E:/Drive'
-      
+
+        const driveFolderPath = path.join("G:", "Drive");
+        // const driveFolderPath = './uploads'; // Or 'E:/Drive'
+
+        // Check if the drive exists
+        if (!fs.existsSync(driveFolderPath)) {
+          console.error("Drive not found:", driveFolderPath);
+          return;
+        }
+
+
         // Construct the path to store images based on ProjectId and Outlet Name
         const outletName = PreSurveyDetails['Outlet Name'] || 'defaultOutlet'; // Fallback if Outlet Name is not available
         const uploadDir = path.join(driveFolderPath, ProjectId.toString(), outletName);
