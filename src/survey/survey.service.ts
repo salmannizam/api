@@ -6,6 +6,8 @@ import { SubmitSurveyDto } from './dto/SubmitSurvey.dto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { GetResultIdDto } from './dto/getResultId.dto';
+import * as ftp from 'basic-ftp';
+import { Readable } from 'stream';
 
 @Injectable()
 export class SurveyService {
@@ -207,52 +209,18 @@ export class SurveyService {
       // Process the Base64 images (optional, depending on your needs)
 
       if (images && isQuestion10000046Yes) {
-
-        const driveFolderPath = path.join("G:", "Drive");
-        // const driveFolderPath = './uploads'; // Or 'E:/Drive'
-
-        // Check if the drive exists
-        if (!fs.existsSync(driveFolderPath)) {
-          console.error("Drive not found:", driveFolderPath);
-          return;
-        }
-
-
-        // Construct the path to store images based on ProjectId and Outlet Name
-        const outletName = PreSurveyDetails['Outlet Name'] || 'defaultOutlet'; // Fallback if Outlet Name is not available
-        const uploadDir = path.join(driveFolderPath, ProjectId.toString(), outletName);
-
-
-        // Create the directory if it doesn't exist
-        if (!fs.existsSync(uploadDir)) {
-          fs.mkdirSync(uploadDir, { recursive: true });
-        }
+        const outletName = PreSurveyDetails['Outlet Name'] || 'defaultOutlet';
+        const uploadedFiles = await this.uploadImageToFtp(ProjectId, outletName, images);
 
         // Save images
-        Object.keys(images).forEach((questionId) => {
-          const base64Image = images[questionId];
-          const buffer = Buffer.from(base64Image, 'base64');
-
-          // Generate a unique file name using timestamp + 5-digit random number
-          const randomNumber = Math.floor(10000 + Math.random() * 90000); // 5-digit random number
-          const timestamp = Date.now(); // Current timestamp
-          const fileName = `${timestamp}_${randomNumber}.jpg`; // Example: 1707746290567_12345.jpg
-          const filePath = path.join(uploadDir, fileName);
-
-
-          console.log(filePath)
-
-          // Write image to the file system
-          fs.writeFileSync(filePath, buffer);
-          console.log(`Saved image for Question ${questionId} at ${filePath}`);
-
-          // Update the answer text with the generated file name
+        // Update answer texts with the uploaded file names
+        Object.entries(uploadedFiles).forEach(([questionId, fileName]) => {
           const questionToUpdate = answeredQuestions.find(q => q.QuestionID === questionId);
           if (questionToUpdate) {
-            questionToUpdate.AnswerText = fileName;
+            questionToUpdate.AnswerText = fileName;  // Save only the file name
           }
-
         });
+
       }
 
       const answeredQuestionsJson = JSON.stringify({ SurveyResultsImport: answeredQuestions });
@@ -304,6 +272,55 @@ export class SurveyService {
     console.log(foundAnswer)
     // Return true if foundAnswer is true, otherwise false
     return foundAnswer;
+  }
+
+  // Private function to upload images to FTP server
+  private async uploadImageToFtp(projectId: string, outletName: string, images: Record<string, string>) {
+    const ftpClient = new ftp.Client();
+    ftpClient.ftp.verbose = true;
+    const uploadedFiles: Record<string, string> = {};  // To store uploaded file names
+
+    try {
+      await ftpClient.access({
+        host: '40.127.190.1',  // Replace with your FTP server
+        user: 'surveyuser',
+        password: 'testpassword@123',
+        secure: true,
+      });
+
+      // Define the new FTP path
+      const ftpBasePath = `G://SURVEY/KOWebApp/${projectId}/Archive/${outletName}`;
+      await ftpClient.ensureDir(ftpBasePath);  // Create directories if they don't exist
+
+      // Upload each image
+      for (const [questionId, base64Image] of Object.entries(images)) {
+        const buffer = Buffer.from(base64Image, 'base64');
+
+        // Generate a unique file name
+        const randomNumber = Math.floor(10000 + Math.random() * 90000);
+        const timestamp = Date.now();
+        const fileName = `${timestamp}_${randomNumber}.jpg`;
+        const filePath = `${ftpBasePath}/${fileName}`;
+
+        const bufferStream = new Readable();
+        bufferStream.push(buffer);
+        bufferStream.push(null);  // End of stream
+
+        await ftpClient.uploadFrom(bufferStream, filePath);
+
+        console.log(`Uploaded image for Question ${questionId} to ${filePath}`);
+
+        // Save only the file name
+        uploadedFiles[questionId] = fileName;
+      }
+    } catch (err) {
+      console.error('FTP Upload Error:', err.message);
+      throw new BadRequestException('Failed to upload images to FTP server');
+    } finally {
+      ftpClient.close();
+    }
+
+    return uploadedFiles;  // Return only file names
   }
 
 
