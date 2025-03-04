@@ -141,7 +141,7 @@ export class SurveyService {
       if (result && result.length > 0) {
         // Parse the resultname field (it's a JSON string) into an actual object
         const parsedData = JSON.parse(result[0].resultname);
-console.log(JSON.stringify(parsedData))
+// console.log(JSON.stringify(parsedData))
         // Check if parsedData contains Questions
         if (parsedData && parsedData[0] && parsedData[0].Questions && parsedData[0].Questions.length > 0) {
           return {
