@@ -141,7 +141,7 @@ export class SurveyService {
       if (result && result.length > 0) {
         // Parse the resultname field (it's a JSON string) into an actual object
         const parsedData = JSON.parse(result[0].resultname);
-
+console.log(JSON.stringify(parsedData))
         // Check if parsedData contains Questions
         if (parsedData && parsedData[0] && parsedData[0].Questions && parsedData[0].Questions.length > 0) {
           return {
@@ -184,7 +184,7 @@ export class SurveyService {
       if (surveyGivenOfOutlet.data.length > 0) {
 
         const productQuestion = answeredQuestions.find(
-          (question) => question.QuestionID == "10000038"
+          (question) => question.QuestionID == "10000049"
         );
 
         // Ensure that the productQuestion is found and has an answertext
@@ -200,17 +200,17 @@ export class SurveyService {
       // Serialize PreSurveyDetails and answeredQuestions to JSON
       const preSurveyDetailsJson = JSON.stringify({ OutletMasterImport: PreSurveyDetails });
 
-      // Check if the answer to QuestionID 10000046 is 'no'
-      const isQuestion10000046Yes = answeredQuestions.some(
-        (question) => question.QuestionID == "10000046" && question.AnswerText.toLowerCase() === 'yes'
+      // Check if the answer to QuestionID 10000057 is 'no'
+      const isQuestion10000057Yes = answeredQuestions.some(
+        (question) => question.QuestionID == "10000057" && question.AnswerText.toLowerCase() === 'yes'
       );
-      console.log(isQuestion10000046Yes)
+      console.log(isQuestion10000057Yes)
 
       // Process the Base64 images (optional, depending on your needs)
 
-      if (images && isQuestion10000046Yes) {
+      if (images && isQuestion10000057Yes) {
         const outletName = PreSurveyDetails['Outlet Name'] || 'defaultOutlet';
-        const uploadedFiles = await this.uploadImageToFtp(ProjectId, outletName, images);
+        const uploadedFiles = await this.uploadImageToLocal(ProjectId, outletName, images);
 
         // Save images
         // Update answer texts with the uploaded file names
@@ -267,7 +267,7 @@ export class SurveyService {
 
     // Check if any survey has the provided answerText (productName) for the specified QuestionID (10033167)
     const foundAnswer = surveys.some(survey =>
-      survey.AnswerText == productName && survey.QuestionID == 10000038
+      survey.AnswerText == productName && survey.QuestionID == 10000049
     );
     console.log(foundAnswer)
     // Return true if foundAnswer is true, otherwise false
@@ -323,5 +323,42 @@ export class SurveyService {
     return uploadedFiles;  // Return only file names
   }
 
+  private async uploadImageToLocal(projectId: string, outletName: string, images: Record<string, string>) {
+    const uploadedFiles: Record<string, string> = {};  // To store uploaded file names
+  
+    try {
+      // Define the local base path to save images
+      const baseLocalPath = `uploads/${projectId}/${outletName}`;
+      
+      // Ensure directory exists, if not, create it
+      if (!fs.existsSync(baseLocalPath)) {
+        fs.mkdirSync(baseLocalPath, { recursive: true });
+      }
+  
+      // Save each image
+      for (const [questionId, base64Image] of Object.entries(images)) {
+        const buffer = Buffer.from(base64Image, 'base64');
+  
+        // Generate a unique file name
+        const randomNumber = Math.floor(10000 + Math.random() * 90000);
+        const timestamp = Date.now();
+        const fileName = `${timestamp}_${randomNumber}.jpg`;
+        const filePath = path.join(baseLocalPath, fileName);
+  
+        // Write the file to local storage
+        fs.writeFileSync(filePath, buffer);
+  
+        console.log(`Saved image for Question ${questionId} to ${filePath}`);
+  
+        // Save only the file name
+        uploadedFiles[questionId] = fileName;
+      }
+    } catch (err) {
+      console.error('Local Upload Error:', err.message);
+      throw new BadRequestException('Failed to save images to local server');
+    }
+  
+    return uploadedFiles;  // Return only file names
+  }
 
 }
