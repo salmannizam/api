@@ -8,6 +8,7 @@ import * as path from 'path';
 import { GetResultIdDto } from './dto/getResultId.dto';
 import * as ftp from 'basic-ftp';
 import { Readable } from 'stream';
+import { BlobServiceClient } from '@azure/storage-blob';
 
 @Injectable()
 export class SurveyService {
@@ -210,7 +211,7 @@ export class SurveyService {
 
       if (images && isQuestion10000057Yes) {
         const outletName = PreSurveyDetails['Outlet Name'] || 'defaultOutlet';
-        const uploadedFiles = await this.uploadImageToLocal(ProjectId, outletName, images);
+        const uploadedFiles = await this.uploadImageToAzure(ProjectId, outletName, images);
 
         // Save images
         // Update answer texts with the uploaded file names
@@ -360,5 +361,41 @@ export class SurveyService {
   
     return uploadedFiles;  // Return only file names
   }
+
+  private async uploadImageToAzure(projectId: string, outletName: string, images: Record<string, string>) {
+
+    const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_BUCKET_KEY);
+    const containerClient = blobServiceClient.getContainerClient('survey'); // Use your container name
+
+    const uploadedFiles: Record<string, string> = {};  // To store uploaded file names
+
+    try {
+      // Upload each image
+      for (const [questionId, base64Image] of Object.entries(images)) {
+        const buffer = Buffer.from(base64Image, 'base64');
+
+        // Generate a unique file name
+        const randomNumber = Math.floor(100000 + Math.random() * 900000);
+
+        const timestamp = Date.now();
+        const fileName = `${timestamp}_${randomNumber}.jpg`;
+        const filePath = `${projectId}/${fileName}`; // Path inside the Azure container
+
+        const blockBlobClient = containerClient.getBlockBlobClient(filePath);
+        await blockBlobClient.uploadData(buffer);
+
+        console.log(`Uploaded image for Question ${questionId} to Azure at ${filePath}`);
+
+        // Save only the file name
+        uploadedFiles[questionId] = fileName;
+      }
+    } catch (err) {
+      console.error('Azure Upload Error:', err.message);
+      throw new BadRequestException('Failed to upload images to Azure Storage');
+    }
+
+    return uploadedFiles;  // Return only file names
+  }
+
 
 }
