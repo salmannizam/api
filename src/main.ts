@@ -2,18 +2,22 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import * as bodyParser from 'body-parser';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  const logger = new Logger('HTTP');
+  // const logger = new Logger('HTTP');
 
   // Log every incoming request
-  app.use((req, res, next) => {
-    logger.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
-    logger.debug(`Headers: ${JSON.stringify(req.headers)}`);
-    logger.debug(`Body: ${JSON.stringify(req.body)}`);
-    next();
-  });
+  // app.use((req, res, next) => {
+  //   logger.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+  //   logger.debug(`Headers: ${JSON.stringify(req.headers)}`);
+  //   logger.debug(`Body: ${JSON.stringify(req.body)}`);
+  //   next();
+  // });
 
   // Enable global validation pipe
   app.useGlobalPipes(new ValidationPipe({
