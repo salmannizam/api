@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import * as bodyParser from 'body-parser';
 import * as dotenv from 'dotenv';
+import { TimeoutInterceptor } from './common/timeout.interceptor';
 
 dotenv.config();
 
@@ -33,7 +34,8 @@ async function bootstrap() {
     allowedHeaders: 'Content-Type, Authorization',  // Allowed headers
   });
   // Increase the body size limit
-  app.use(bodyParser.json({ limit: '50mb' }));
+  app.use(bodyParser.json({ limit: '80mb' }));
+  app.useGlobalInterceptors(new TimeoutInterceptor());
   await app.listen(3000);
 }
 bootstrap();

@@ -3,12 +3,12 @@ import { DatabaseService } from '../database/database.service';
 import { ValidateSurveyDto } from './dto/vaildate-survey.dto';
 import * as sql from 'mssql';  // Ensure 'mssql' is imported
 import { SubmitSurveyDto } from './dto/SubmitSurvey.dto';
-import * as fs from 'fs';
-import * as path from 'path';
 import { GetResultIdDto } from './dto/getResultId.dto';
 import * as ftp from 'basic-ftp';
-import { Readable } from 'stream';
+import * as sharp from 'sharp';
 import { BlobServiceClient } from '@azure/storage-blob';
+
+
 
 @Injectable()
 export class SurveyService {
@@ -142,7 +142,7 @@ export class SurveyService {
       if (result && result.length > 0) {
         // Parse the resultname field (it's a JSON string) into an actual object
         const parsedData = JSON.parse(result[0].resultname);
-// console.log(JSON.stringify(parsedData))
+        // console.log(JSON.stringify(parsedData))
         // Check if parsedData contains Questions
         if (parsedData && parsedData[0] && parsedData[0].Questions && parsedData[0].Questions.length > 0) {
           return {
@@ -275,94 +275,8 @@ export class SurveyService {
     return foundAnswer;
   }
 
-  // Private function to upload images to FTP server
-  private async uploadImageToFtp(projectId: string, outletName: string, images: Record<string, string>) {
-    const ftpClient = new ftp.Client();
-    ftpClient.ftp.verbose = true;
-    const uploadedFiles: Record<string, string> = {};  // To store uploaded file names
 
-    try {
-      await ftpClient.access({
-        host: '40.127.190.1',  // Replace with your FTP server
-        user: 'surveyuser',
-        password: 'testpassword@123',
-        secure: true,
-      });
-
-      // Define the new FTP path
-      const ftpBasePath = `G://SURVEY/KOWebApp/${projectId}/Archive/${outletName}`;
-      await ftpClient.ensureDir(ftpBasePath);  // Create directories if they don't exist
-
-      // Upload each image
-      for (const [questionId, base64Image] of Object.entries(images)) {
-        const buffer = Buffer.from(base64Image, 'base64');
-
-        // Generate a unique file name
-        const randomNumber = Math.floor(10000 + Math.random() * 90000);
-        const timestamp = Date.now();
-        const fileName = `${timestamp}_${randomNumber}.jpg`;
-        const filePath = `${ftpBasePath}/${fileName}`;
-
-        const bufferStream = new Readable();
-        bufferStream.push(buffer);
-        bufferStream.push(null);  // End of stream
-
-        await ftpClient.uploadFrom(bufferStream, filePath);
-
-        console.log(`Uploaded image for Question ${questionId} to ${filePath}`);
-
-        // Save only the file name
-        uploadedFiles[questionId] = fileName;
-      }
-    } catch (err) {
-      console.error('FTP Upload Error:', err.message);
-      throw new BadRequestException('Failed to upload images to FTP server');
-    } finally {
-      ftpClient.close();
-    }
-
-    return uploadedFiles;  // Return only file names
-  }
-
-  private async uploadImageToLocal(projectId: string, outletName: string, images: Record<string, string>) {
-    const uploadedFiles: Record<string, string> = {};  // To store uploaded file names
-  
-    try {
-      // Define the local base path to save images
-      const baseLocalPath = `uploads/${projectId}/${outletName}`;
-      
-      // Ensure directory exists, if not, create it
-      if (!fs.existsSync(baseLocalPath)) {
-        fs.mkdirSync(baseLocalPath, { recursive: true });
-      }
-  
-      // Save each image
-      for (const [questionId, base64Image] of Object.entries(images)) {
-        const buffer = Buffer.from(base64Image, 'base64');
-  
-        // Generate a unique file name
-        const randomNumber = Math.floor(10000 + Math.random() * 90000);
-        const timestamp = Date.now();
-        const fileName = `${timestamp}_${randomNumber}.jpg`;
-        const filePath = path.join(baseLocalPath, fileName);
-  
-        // Write the file to local storage
-        fs.writeFileSync(filePath, buffer);
-  
-        console.log(`Saved image for Question ${questionId} to ${filePath}`);
-  
-        // Save only the file name
-        uploadedFiles[questionId] = fileName;
-      }
-    } catch (err) {
-      console.error('Local Upload Error:', err.message);
-      throw new BadRequestException('Failed to save images to local server');
-    }
-  
-    return uploadedFiles;  // Return only file names
-  }
-
-  private async uploadImageToAzure(projectId: string, outletName: string, images: Record<string, string>) {
+  private async uploadImageToAzure2(projectId: string, outletName: string, images: Record<string, string>) {
 
     const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_BUCKET_KEY);
     const containerClient = blobServiceClient.getContainerClient('survey'); // Use your container name
@@ -395,6 +309,42 @@ export class SurveyService {
     }
 
     return uploadedFiles;  // Return only file names
+  }
+
+  private async uploadImageToAzure(projectId: string, outletName: string, images: Record<string, string>) {
+    const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_BUCKET_KEY);
+    const containerClient = blobServiceClient.getContainerClient('survey');
+
+    const uploadedFiles: Record<string, string> = {};
+
+    try {
+      for (const [questionId, base64Image] of Object.entries(images)) {
+        const buffer = Buffer.from(base64Image, 'base64');
+
+        // 👉 Compress and resize image using Sharp
+        const compressedBuffer = await sharp(buffer)
+          .resize({ width: 1024, fit: 'inside' })  // Resize if larger than 1024px width
+          .jpeg({ quality: 70 })  // Compress to 70% quality
+          .toBuffer();
+
+        // Generate a unique file name
+        const randomNumber = Math.floor(100000 + Math.random() * 900000);
+        const timestamp = Date.now();
+        const fileName = `${timestamp}_${randomNumber}.jpg`;
+        const filePath = `${projectId}/${fileName}`;
+
+        const blockBlobClient = containerClient.getBlockBlobClient(filePath);
+        await blockBlobClient.uploadData(compressedBuffer);
+
+        console.log(`Uploaded compressed image for Question ${questionId} to Azure at ${filePath}`);
+        uploadedFiles[questionId] = fileName;
+      }
+    } catch (err) {
+      console.error('Azure Upload Error:', err.message);
+      throw new BadRequestException('Failed to upload images to Azure Storage');
+    }
+
+    return uploadedFiles;
   }
 
 
