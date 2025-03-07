@@ -36,6 +36,6 @@ async function bootstrap() {
   // Increase the body size limit
   app.use(bodyParser.json({ limit: '80mb' }));
   app.useGlobalInterceptors(new TimeoutInterceptor());
-  await app.listen(3000);
+  await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();
