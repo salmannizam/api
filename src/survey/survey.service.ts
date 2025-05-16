@@ -176,10 +176,10 @@ export class SurveyService {
   async submitSurvey(submitSurveyDto: SubmitSurveyDto) {
 
     try {
-      const { ProjectId, PreSurveyDetails, answeredQuestions, images } = submitSurveyDto;
+      const { ProjectId, PreSurveyDetails, answeredQuestions, images, allImagesDefectCount, allImagesRemarks } = submitSurveyDto;
 
-      // console.log('Survey Data:', PreSurveyDetails);
-      // console.log('Survey Data:', answeredQuestions);
+      console.log('allImagesDefectCount:', allImagesDefectCount);
+      console.log('allImagesRemarks:', allImagesRemarks);
 
       const surveyGivenOfOutlet = await this.getSubmittedSurvey(ProjectId, PreSurveyDetails.Outlet_Name);
       if (surveyGivenOfOutlet.data.length > 0) {
@@ -215,10 +215,30 @@ export class SurveyService {
 
         // Save images
         // Update answer texts with the uploaded file names
+        // Object.entries(uploadedFiles).forEach(([questionId, fileName]) => {
+        //   const questionToUpdate = answeredQuestions.find(q => q.QuestionID === questionId);
+        //   if (questionToUpdate) {
+        //     questionToUpdate.AnswerText = fileName;  // Save only the file name
+        //   }
+        // });
+
         Object.entries(uploadedFiles).forEach(([questionId, fileName]) => {
-          const questionToUpdate = answeredQuestions.find(q => q.QuestionID === questionId);
-          if (questionToUpdate) {
-            questionToUpdate.AnswerText = fileName;  // Save only the file name
+          const existing = answeredQuestions.find(q => q.QuestionID === questionId);
+
+          if (existing) {
+            existing.AnswerText = fileName;
+          } else {
+            answeredQuestions.push({
+              SurveyID: PreSurveyDetails.SurveyID,
+              ResultID: PreSurveyDetails.ResultID,
+              QuestionID: questionId,
+              AnswerID: "" ,
+              AnswerText: fileName,
+              Location: allImagesDefectCount?.[questionId] ?? "1" ,
+              Remarks: allImagesRemarks?.[questionId] ?? '',
+              DeviceID: answeredQuestions?.[0]?.DeviceID,
+              ProjectId: PreSurveyDetails.ProjectId
+            });
           }
         });
 
@@ -230,7 +250,7 @@ export class SurveyService {
       const sqlQuery = 'EXEC [dbo].[OutletImportJSONSAVE] @JSON_INPUT, @JSON_INPUT1';
 
       // console.log('preSurveyDetailsJson',preSurveyDetailsJson);
-      // console.log('answeredQuestionsJson',answeredQuestionsJson);
+      console.log('answeredQuestionsJson',answeredQuestionsJson);
       // Execute the query using the database service, passing the parameters
       const res = await this.databaseService.query(sqlQuery, [
         { name: 'JSON_INPUT', type: 'nvarchar(max)', value: preSurveyDetailsJson },

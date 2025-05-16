@@ -32,7 +32,7 @@ class AnsweredQuestionDto {
 
 class PreSurveyDetailsDto {
   @IsString()
-  SurveyID: string; 
+  SurveyID: string;
 
   @IsString()
   ResultID: string;
@@ -73,7 +73,7 @@ class PreSurveyDetailsDto {
   @IsNumberString()
   @IsNotEmpty()  // Make EndDate mandatory
   EndDate: string;
-  
+
   @IsNumberString()
   @IsNotEmpty()  // Make EndTime mandatory
   EndTime: string;
@@ -99,4 +99,12 @@ export class SubmitSurveyDto {
   @IsObject()
   @IsOptional()  // Make images optional
   images: { [key: string]: string }; // Key: QuestionID, Value: Base64 Image String
+
+  @IsObject()
+  @IsOptional()  // Make images optional
+  allImagesDefectCount: { [key: string]: string }; // Key: QuestionID, Value: Base64 Image String
+
+  @IsObject()
+  @IsOptional()  // Make images optional
+  allImagesRemarks: { [key: string]: string }; // Key: QuestionID, Value: Base64 Image String
 }
