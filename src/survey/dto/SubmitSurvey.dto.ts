@@ -97,9 +97,9 @@ export class SubmitSurveyDto {
   answeredQuestions: AnsweredQuestionDto[];
 
   @IsObject()
-  @IsOptional()  // Make images optional
-  images: { [key: string]: string }; // Key: QuestionID, Value: Base64 Image String
-
+  @IsOptional()
+  images: { [key: string]: string[] }; // array of base64 strings
+  
   @IsObject()
   @IsOptional()  // Make images optional
   allImagesDefectCount: { [key: string]: string }; // Key: QuestionID, Value: Base64 Image String

@@ -331,39 +331,47 @@ export class SurveyService {
     return uploadedFiles;  // Return only file names
   }
 
-  private async uploadImageToAzure(projectId: string, outletName: string, images: Record<string, string>) {
+  private async uploadImageToAzure(projectId: string, 
+    outletName: string,
+    images: Record<string, string[]>
+    ) {
     const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_BUCKET_KEY);
     const containerClient = blobServiceClient.getContainerClient('survey');
 
     const uploadedFiles: Record<string, string> = {};
 
     try {
-      for (const [questionId, base64Image] of Object.entries(images)) {
-        const buffer = Buffer.from(base64Image, 'base64');
-
-        // 👉 Compress and resize image using Sharp
-        const compressedBuffer = await sharp(buffer)
-          .resize({ width: 1024, fit: 'inside' })  // Resize if larger than 1024px width
-          .jpeg({ quality: 70 })  // Compress to 70% quality
-          .toBuffer();
-
-        // Generate a unique file name
-        const randomNumber = Math.floor(100000 + Math.random() * 900000);
-        const timestamp = Date.now();
-        const fileName = `${timestamp}_${randomNumber}.jpg`;
-        const filePath = `${projectId}/${fileName}`;
-
-        const blockBlobClient = containerClient.getBlockBlobClient(filePath);
-        await blockBlobClient.uploadData(compressedBuffer);
-
-        console.log(`Uploaded compressed image for Question ${questionId} to Azure at ${filePath}`);
-        uploadedFiles[questionId] = fileName;
+      for (const [questionId, base64ImageArray] of Object.entries(images)) {
+        const fileNames: string[] = [];
+  
+        for (const base64Image of base64ImageArray) {
+          const buffer = Buffer.from(base64Image, 'base64');
+  
+          // Compress
+          const compressedBuffer = await sharp(buffer)
+            .resize({ width: 1024, fit: 'inside' })
+            .jpeg({ quality: 70 })
+            .toBuffer();
+  
+          // Unique filename
+          const randomNumber = Math.floor(100000 + Math.random() * 900000);
+          const timestamp = Date.now();
+          const fileName = `${timestamp}_${randomNumber}.jpg`;
+          const filePath = `${projectId}/${fileName}`;
+  
+          const blockBlobClient = containerClient.getBlockBlobClient(filePath);
+          await blockBlobClient.uploadData(compressedBuffer);
+  
+          fileNames.push(fileName);
+        }
+  
+        uploadedFiles[questionId] = fileNames.join(','); // store as comma-separated string
       }
     } catch (err) {
       console.error('Azure Upload Error:', err.message);
       throw new BadRequestException('Failed to upload images to Azure Storage');
     }
-
+  
     return uploadedFiles;
   }
 
